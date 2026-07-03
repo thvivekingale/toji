@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vicky × Toji | Premium Workout Master</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            toji: {
+              gold: '#C9A84C',
+              goldLight: '#E8CA75',
+              goldDark: '#8F742A',
+              bg: '#080808',
+              panel: '#111111',
+              border: '#222222',
+              text: '#e5e5e5',
+              muted: '#888888'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif']
+          },
+          animation: {
+            'glow': 'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            glow: {
+              '0%': { filter: 'drop-shadow(0 0 2px rgba(201,168,76,0.4))' },
+              '100%': { filter: 'drop-shadow(0 0 10px rgba(201,168,76,0.8))' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel for in-browser JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { background-color: #080808; color: #e5e5e5; -webkit-tap-highlight-color: transparent; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #080808; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #C9A84C; }
+    /* Glassmorphism utilities */
+    .glass { background: rgba(17, 17, 17, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .hide-search::-webkit-search-cancel-button { display: none; }
+  </style>
+</head>
+<body class="antialiased selection:bg-toji-gold selection:text-black">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // --- ICON COMPONENTS ---
+    const Icon = ({ path, className = "w-5 h-5", fill = "none" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: path }} />
+    );
+    const Icons = {
+      CheckCircle: <Icon path='<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>' />,
+      Circle: <Icon path='<circle cx="12" cy="12" r="10"></circle>' />,
+      ChevronDown: <Icon path='<polyline points="6 9 12 15 18 9"></polyline>' />,
+      ChevronUp: <Icon path='<polyline points="18 15 12 9 6 15"></polyline>' />,
+      Star: <Icon fill="currentColor" path='<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>' />,
+      Flame: <Icon path='<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>' />,
+      Snowflake: <Icon path='<line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line><path d="m20 16-4-4 4-4"></path><path d="m4 8 4 4-4 4"></path><path d="m16 4-4 4-4-4"></path><path d="m8 20 4-4 4 4"></path>' />,
+      Search: <Icon path='<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>' />,
+      Timer: <Icon path='<line x1="10" y1="2" x2="14" y2="2"></line><line x1="12" y1="14" x2="15" y2="11"></line><circle cx="12" cy="14" r="8"></circle>' />,
+      Play: <Icon fill="currentColor" path='<polygon points="5 3 19 12 5 21 5 3"></polygon>' />,
+      Pause: <Icon fill="currentColor" path='<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>' />,
+      X: <Icon path='<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' />,
+      Reset: <Icon path='<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline>' />,
+      Shield: <Icon path='<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path>' />,
+      Edit: <Icon path='<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>' />,
+      Dumbbell: <Icon path='<path d="M14.4 14.4 9.6 9.6"></path><path d="M18.65 21.35a2 2 0 0 1-2.83 0l-5.66-5.66a2 2 0 0 1 0-2.83l.06-.06a2 2 0 0 1 2.83 0l5.66 5.66a2 2 0 0 1 0 2.83l-.06.06z"></path><path d="M2 12l2-2 4 4-2 2-4-4z"></path><path d="M22 12l-2-2-4 4 2 2 4-4z"></path><path d="M2.65 2.65a2 2 0 0 1 2.83 0l5.66 5.66a2 2 0 0 1 0 2.83l-.06.06a2 2 0 0 1-2.83 0L2.59 5.54a2 2 0 0 1 0-2.83l.06-.06z"></path>' />,
+      Activity: <Icon path='<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>' />,
+      Bodyweight: <Icon path='<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path><path d="M12 14v7"></path><path d="M9 22h6"></path><path d="M5 11h14"></path>' />
+    };
+
+    // --- DATA ---
+    const C = 'c', I = 'i', B = 'b';
+    const PL = {
+      s4: {
+        name: 'Split Program', sub: '4 Days/Week • Push · Pull · Legs · Upper',
+        sc: [{ d: 'Mon', t: 'Push', s: 'Chest+Tri', g: 1 }, { d: 'Tue', t: 'Rest', s: 'Core', g: 0 }, { d: 'Wed', t: 'Pull', s: 'Back+Bi', g: 1 }, { d: 'Thu', t: 'Rest', s: 'Core', g: 0 }, { d: 'Fri', t: 'Legs', s: 'Lower', g: 1 }, { d: 'Sat', t: 'Upper B', s: 'Shoulders', g: 1 }, { d: 'Sun', t: 'Rest', s: 'Recovery', g: 0 }],
+        days: [
+          { n: 'D1', t: 'Push — chest + delts + triceps', s: 'Monday · ~70 min', wu: '5 min jump rope → arm circles ×15 each → shoulder pass-throughs ×10 → 2×10 empty bar incline press', ex: [
+            { n: 'Incline barbell / DB press', m: 'Upper pecs · front delt', s: '4', r: '6–8', rest: '90s', t: C, p: 1, note: '30–45° bench. Retract scapula. Upper chest FIRST.' },
+            { n: 'Flat DB press', m: 'Mid pecs', s: '3', r: '8–10', rest: '75s', t: C, p: 0, note: 'Full ROM. DBs almost touch at top. Slow 3-sec negative.' },
+            { n: 'Cable fly (low-to-high)', m: 'Upper chest isolation', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Constant cable tension. Targets clavicular head.' },
+            { n: 'Cable lateral raise', m: 'Lateral delt — priority #1', s: '5', r: '15–20', rest: '45s', t: I, p: 1, note: 'TOJI KEY. Lead with elbow not hand. No trap shrug.' },
+            { n: 'DB lateral raise', m: 'Lateral delt extra volume', s: '3', r: '15–20', rest: '45s', t: I, p: 0, note: 'Slight forward lean. Stop at shoulder height.' },
+            { n: 'Overhead cable extension', m: 'Triceps long head', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Full stretch at bottom. Elbows point at ceiling.' },
+            { n: 'Rope pushdown', m: 'Triceps lateral head', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Split rope at bottom. Elbows pinned to sides.' },
+            { n: 'Diamond push-ups', m: 'Triceps · inner chest', s: '2', r: 'To failure', rest: '60s', t: B, p: 0, note: 'Hands form triangle. Elbows go BACK not out.' },
+          ], cd: 'Chest doorframe stretch 30s → cross-body shoulder stretch 30s each → 5 deep breaths' },
+          { n: 'D2', t: 'Pull — back + rear delt + biceps', s: 'Wednesday · ~70 min', wu: 'Dead hang 20s → band pull-aparts ×15 → face pull warm-up ×20 light', ex: [
+            { n: 'Wide pull-ups', m: 'Lats · V-taper width', s: '4', r: '6–10', rest: '90s', t: C, p: 1, note: 'Drive elbows to pockets. Full stretch at top.' },
+            { n: 'Barbell bent-over row', m: 'Mid-back · rhomboids', s: '4', r: '8–10', rest: '90s', t: C, p: 0, note: '45° torso lean. Pull to navel. Elbows close.' },
+            { n: 'T-bar row', m: 'Mid-back thickness', s: '3', r: '8–10', rest: '75s', t: C, p: 0, note: 'Full ROM. Feel the back stretch.' },
+            { n: 'Single-arm DB row', m: 'Lats · lower lats', s: '3', r: '10–12 ea', rest: '60s', t: C, p: 0, note: 'Elbow drives to HIP not out to side.' },
+            { n: 'Straight-arm pulldown', m: 'Lat isolation', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Arms stay straight. Hinge at shoulder only.' },
+            { n: 'Face pulls', m: 'Rear delt · APT corrective', s: '4', r: '15–20', rest: '45s', t: I, p: 1, note: 'POSTURE FIX. Elbows high and wide.' },
+            { n: 'Incline DB curl', m: 'Biceps long head', s: '3', r: '10–12', rest: '75s', t: I, p: 0, note: 'Arms hang BEHIND body = max stretch.' },
+            { n: 'Wide-grip barbell curl', m: 'Biceps short head', s: '3', r: '8–10', rest: '75s', t: I, p: 0, note: 'Wide grip targets short head. 3-sec negative.' },
+            { n: 'Cross-body hammer curl', m: 'Brachialis', s: '2', r: '12 ea', rest: '60s', t: I, p: 0, note: 'Neutral grip across body. Builds outer arm width.' },
+            { n: 'DB shrugs', m: 'Upper traps', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Straight up — no rolling. Hold 1 sec at top.' },
+          ], cd: 'Overhead lat stretch → child\'s pose 30s → bicep wall stretch' },
+          { n: 'D3', t: 'Legs + core — full lower body', s: 'Friday · ~75 min', wu: 'Glute bridges 3×15 → hip flexor stretch 45s each → BW squats ×15', ex: [
+            { n: 'Barbell back squat', m: 'Quads · glutes', s: '4', r: '6–8', rest: '2min', t: C, p: 1, note: 'Hip crease below parallel. APT cue: tuck pelvis.' },
+            { n: 'Romanian deadlift', m: 'Hamstrings · glutes', s: '4', r: '8–10', rest: '90s', t: C, p: 1, note: 'FIXES APT DIRECTLY. Hip hinge.' },
+            { n: 'Leg press', m: 'Quads · volume builder', s: '3', r: '10–12', rest: '90s', t: C, p: 0, note: 'Feet mid-plate. Don\'t lock knees at top.' },
+            { n: 'Bulgarian split squat', m: 'Quads · glutes', s: '3', r: '10–12 ea', rest: '75s', t: C, p: 0, note: 'Rear foot elevated. Deep ROM.' },
+            { n: 'Seated leg curl', m: 'Hamstrings', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: '3-sec eccentric every rep.' },
+            { n: 'Leg extension', m: 'Quad sweep · VMO', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Squeeze hard at top. Hold 1 sec.' },
+            { n: 'Standing calf raise', m: 'Gastrocnemius', s: '5', r: '15–20', rest: '45s', t: I, p: 0, note: 'Full stretch at bottom — hold 2 sec.' },
+            { n: 'Hanging leg raises', m: 'Lower abs', s: '4', r: '12–15', rest: '45s', t: B, p: 0, note: 'Tuck pelvis at top. Slow lower.' },
+            { n: 'Cable crunch', m: 'Upper abs', s: '3', r: '15', rest: '45s', t: I, p: 0, note: 'Round spine to chest. Arms fixed.' },
+          ], cd: 'Pigeon pose 45s each hip → kneeling hip flexor stretch 45s EACH' },
+          { n: 'D4', t: 'Shoulders + arms — Toji priority', s: 'Saturday · ~80 min', wu: 'Band pull-aparts ×15 → face pull warm-up ×20 → BW lateral raises', ex: [
+            { n: 'Seated DB shoulder press', m: 'All delt heads', s: '4', r: '8–10', rest: '90s', t: C, p: 1, note: 'TOJI BASE BUILDER. No full lockout.' },
+            { n: 'Arnold press', m: 'All 3 deltoid heads', s: '3', r: '10–12', rest: '75s', t: C, p: 0, note: 'Full rotation from neutral to pronated.' },
+            { n: 'Cable lateral raise', m: 'Lateral delt — critical', s: '6', r: '15–20', rest: '45s', t: I, p: 1, note: '6 SETS. Unilateral. Builds Toji shoulder cap.' },
+            { n: 'DB lateral raise (lean-away)', m: 'Lateral delt isolation', s: '3', r: '15–20', rest: '45s', t: I, p: 0, note: 'Lean body away. Greater ROM.' },
+            { n: 'Upright row', m: 'Side delt + trap', s: '3', r: '12', rest: '60s', t: C, p: 0, note: 'Wide grip only. Stop at chest level.' },
+            { n: 'Rear delt cable fly', m: 'Rear deltoid', s: '4', r: '15–20', rest: '45s', t: I, p: 0, note: 'Arms parallel to floor. Drive elbows BACK.' },
+            { n: 'Skull crushers', m: 'Triceps long head', s: '3', r: '10–12', rest: '75s', t: I, p: 0, note: 'Elbows point at ceiling. 3-sec negative.' },
+            { n: 'Close-grip bench press', m: 'Triceps mass', s: '3', r: '8–10', rest: '75s', t: C, p: 0, note: 'Best tricep mass compound.' },
+            { n: 'Incline DB curl', m: 'Biceps long head', s: '3', r: '10–12', rest: '75s', t: I, p: 0, note: 'Arms behind body = max long head stretch.' },
+            { n: 'EZ preacher curl', m: 'Biceps short head', s: '3', r: '10–12', rest: '60s', t: I, p: 0, note: 'Full extension at bottom. No cheating.' },
+            { n: 'Cross-body hammer curl', m: 'Brachialis', s: '2', r: '12 ea', rest: '60s', t: I, p: 0, note: 'Builds arm THICKNESS.' },
+          ], cd: 'Cross-body shoulder stretch 30s each → overhead tricep stretch' }
+        ]
+      },
+      s5: {
+        name: 'Split Program', sub: '5 Days/Week • Push · Pull · Legs · Shoulders · Arms',
+        sc: [{ d: 'Mon', t: 'Push A', s: 'Chest', g: 1 }, { d: 'Tue', t: 'Pull A', s: 'Back', g: 1 }, { d: 'Wed', t: 'Legs', s: 'Lower', g: 1 }, { d: 'Thu', t: 'Rest', s: 'Core', g: 0 }, { d: 'Fri', t: 'Shoulders', s: 'Delts', g: 1 }, { d: 'Sat', t: 'Arms', s: 'Bi+Tri', g: 1 }, { d: 'Sun', t: 'Rest', s: 'Recovery', g: 0 }],
+        days: [
+          { n: 'D1', t: 'Push A — chest dominant', s: 'Mon', wu: '5 min jump rope → 15 arm circles', ex: [ { n: 'Incline barbell press', m: 'Upper pecs', s: '4', r: '6–8', rest: '90s', t: C, p: 1, note: 'Upper chest FIRST always.' }, { n: 'Flat DB press', m: 'Mid pecs', s: '4', r: '8–10', rest: '75s', t: C, p: 0, note: 'Full pec stretch at bottom.' }, { n: 'Cable fly (low-to-high)', m: 'Upper chest', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Constant tension on clavicular head.' }, { n: 'Pec deck machine', m: 'Inner pecs', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Squeeze hard at midpoint.' }, { n: 'Weighted dips', m: 'Lower chest', s: '3', r: '8–10', rest: '75s', t: C, p: 0, note: 'Lean forward for chest emphasis.' }, { n: 'Overhead cable extension', m: 'Tri long head', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Full overhead stretch.' }, { n: 'Rope pushdown', m: 'Tri lateral head', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Split rope at bottom.' }, { n: 'Cable lateral raise', m: 'Side delt', s: '3', r: '15–20', rest: '45s', t: I, p: 1, note: '2x weekly frequency for lateral delts.' } ], cd: 'Chest stretch 30s' },
+          { n: 'D2', t: 'Pull A — back width + biceps', s: 'Tue', wu: 'Dead hang 20s → pull-aparts', ex: [ { n: 'Weighted pull-ups', m: 'Lats width', s: '4', r: '5–8', rest: '90s', t: C, p: 1, note: 'Drive elbows DOWN, not back.' }, { n: 'Barbell bent-over row', m: 'Mid-back thickness', s: '4', r: '8–10', rest: '90s', t: C, p: 0, note: '45° torso. Pull to navel.' }, { n: 'Lat pulldown', m: 'Lats volume', s: '3', r: '10–12', rest: '75s', t: C, p: 0, note: 'Full stretch at top.' }, { n: 'Seated cable row', m: 'Rhomboids', s: '3', r: '10–12', rest: '75s', t: C, p: 0, note: 'Squeeze blades together.' }, { n: 'Cable pullover', m: 'Lat isolation', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Arms straight. Shoulder hinge only.' }, { n: 'Face pulls', m: 'Rear delt', s: '3', r: '15–20', rest: '45s', t: I, p: 0, note: 'Eye level. Elbows HIGH.' }, { n: 'Barbell curl', m: 'Biceps mass', s: '3', r: '8–10', rest: '75s', t: C, p: 0, note: '3-sec negative.' }, { n: 'Incline DB curl', m: 'Biceps peak', s: '3', r: '10–12', rest: '60s', t: I, p: 0, note: 'Arms hang behind body.' }, { n: 'Hammer curl', m: 'Brachialis', s: '2', r: '12', rest: '60s', t: I, p: 0, note: 'Builds outer arm thickness.' }, { n: 'DB shrugs', m: 'Upper traps', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Hold 1 sec. No rolling.' } ], cd: 'Lat stretch' },
+          { n: 'D3', t: 'Legs — full lower body', s: 'Wed', wu: 'Glute bridges 3×15 → hip flexor stretch', ex: [ { n: 'Barbell back squat', m: 'Quads · glutes', s: '4', r: '6–8', rest: '2min', t: C, p: 1, note: 'Below parallel.' }, { n: 'Romanian deadlift', m: 'Hamstrings', s: '4', r: '8–10', rest: '90s', t: C, p: 1, note: 'Stretches hip flexors, strengthens glutes.' }, { n: 'Hack squat', m: 'Quad sweep', s: '3', r: '10–12', rest: '90s', t: C, p: 0, note: 'Narrow feet for teardrop look.' }, { n: 'Bulgarian split squat', m: 'Quads · glutes', s: '3', r: '10–12 ea', rest: '75s', t: C, p: 0, note: 'Great glute activator.' }, { n: 'Seated leg curl', m: 'Hamstrings', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: '3-sec eccentric.' }, { n: 'Leg extension', m: 'Quad sweep', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Squeeze at top.' }, { n: 'Standing calf raise', m: 'Calves', s: '5', r: '15–20', rest: '45s', t: I, p: 0, note: 'Full stretch held 2 sec.' }, { n: 'Hanging leg raises', m: 'Lower abs', s: '4', r: '12–15', rest: '45s', t: B, p: 0, note: 'Tuck pelvis at top.' }, { n: 'Cable crunch', m: 'Upper abs', s: '3', r: '15', rest: '45s', t: I, p: 0, note: 'Round spine fully.' } ], cd: 'Pigeon pose 45s' },
+          { n: 'D4', t: "Shoulders — Toji session", s: 'Fri', wu: 'Jump rope 3 min → pull-aparts', ex: [ { n: 'Seated DB press', m: 'Front/side delt', s: '4', r: '8–10', rest: '90s', t: C, p: 1, note: 'TOJI BASE. Elbows at 45°.' }, { n: 'Arnold press', m: 'All 3 heads', s: '3', r: '10–12', rest: '75s', t: C, p: 0, note: 'Rotate fully.' }, { n: 'Cable lateral raise', m: 'Lateral delt', s: '6', r: '15–20', rest: '45s', t: I, p: 1, note: '6 SETS. LOW cable = constant tension.' }, { n: 'Seated DB lateral raise', m: 'Lateral delt', s: '4', r: '15–20', rest: '45s', t: I, p: 0, note: 'Lean body away.' }, { n: 'Upright row', m: 'Side delt/trap', s: '3', r: '12', rest: '60s', t: C, p: 0, note: 'Wide grip only.' }, { n: 'Rear delt cable fly', m: 'Rear delt', s: '4', r: '15–20', rest: '45s', t: I, p: 0, note: 'Arms parallel to floor.' }, { n: 'Reverse pec deck', m: 'Rear delt', s: '3', r: '15–20', rest: '45s', t: I, p: 0, note: 'No shoulder shrug.' }, { n: 'DB front raise', m: 'Front delt', s: '2', r: '12–15', rest: '45s', t: I, p: 0, note: 'Only 2 sets needed.' }, { n: 'Barbell shrugs', m: 'Upper traps', s: '3', r: '12–15', rest: '60s', t: C, p: 0, note: 'Toji trap development.' } ], cd: 'Shoulder stretch 30s' },
+          { n: 'D5', t: "Arms + core — Thick arms", s: 'Sat', wu: 'Wrist circles → light curls', ex: [ { n: 'Incline DB curl', m: 'Bi long head', s: '3', r: '10–12', rest: '75s', t: I, p: 1, note: 'Arms hang BEHIND body.' }, { n: 'Close-grip barbell curl', m: 'Bi long head', s: '3', r: '8–10', rest: '75s', t: C, p: 0, note: 'Close grip = long head.' }, { n: 'Wide-grip barbell curl', m: 'Bi short head', s: '3', r: '8–10', rest: '75s', t: C, p: 0, note: 'Builds visible mass.' }, { n: 'EZ preacher curl', m: 'Bi short head', s: '3', r: '10–12', rest: '60s', t: I, p: 0, note: 'No cheating possible.' }, { n: 'Cable curl', m: 'Peak contraction', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Constant tension.' }, { n: 'Cross-body hammer curl', m: 'Brachialis', s: '3', r: '12 ea', rest: '60s', t: I, p: 0, note: 'Essential for Toji arm look.' }, { n: 'Close-grip bench press', m: 'Triceps mass', s: '3', r: '8–10', rest: '90s', t: C, p: 1, note: 'Heaviest compound for arms.' }, { n: 'Skull crushers', m: 'Tri long head', s: '3', r: '10–12', rest: '75s', t: I, p: 0, note: 'Elbows ceiling.' }, { n: 'Overhead cable extension', m: 'Tri long head', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Maximum stretch.' }, { n: 'Rope pushdown', m: 'Tri lateral head', s: '3', r: '12–15', rest: '60s', t: I, p: 0, note: 'Split rope at bottom.' }, { n: 'DB wrist curl', m: 'Forearm flexors', s: '3', r: '15–20', rest: '45s', t: I, p: 0, note: 'Thick forearms.' }, { n: 'Reverse wrist curl', m: 'Forearm extensors', s: '2', r: '15–20', rest: '45s', t: I, p: 0, note: 'Balances flexor work.' }, { n: 'Hanging leg raises', m: 'Lower abs', s: '4', r: '12–15', rest: '45s', t: B, p: 0, note: 'Tuck pelvis.' }, { n: 'Cable crunch', m: 'Upper abs', s: '3', r: '15', rest: '45s', t: I, p: 0, note: 'Add weight weekly.' } ], cd: 'Arm stretches' }
+        ]
+      }
+    };
+
+    // Parser for timers
+    const parseTime = (str) => {
+      if (!str) return 0;
+      let s = 0;
+      if (str.includes('-')) {
+        const match = str.split('-')[1].match(/(\d+)/);
+        if (match) s = parseInt(match[1]);
+      } else {
+        const mMatch = str.match(/(\d+)\s*m/i);
+        if (mMatch) s += parseInt(mMatch[1]) * 60;
+        const sMatch = str.match(/(\d+)\s*s/i);
+        if (sMatch) s += parseInt(sMatch[1]);
+      }
+      return s;
+    };
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      const [activePlanId, setActivePlanId] = useState('s4');
+      const [expandedDays, setExpandedDays] = useState(['D1']);
+      const [searchQuery, setSearchQuery] = useState('');
+      
+      // Local Storage States
+      const [completedEx, setCompletedEx] = useState({});
+      const [notes, setNotes] = useState({});
+      const [loaded, setLoaded] = useState(false);
+
+      // Timer State
+      const [timer, setTimer] = useState({ active: false, left: 0, init: 0, label: '', run: false });
+      const timerRef = useRef(null);
+
+      // Initialization - Load from Local Storage
+      useEffect(() => {
+        try {
+          const saved = localStorage.getItem('tojiWorkoutApp');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.completed) setCompletedEx(parsed.completed);
+            if (parsed.notes) setNotes(parsed.notes);
+          }
+        } catch (e) { console.error("Could not load data", e); }
+        setLoaded(true);
+      }, []);
+
+      // Save to Local Storage on change
+      useEffect(() => {
+        if (loaded) {
+          localStorage.setItem('tojiWorkoutApp', JSON.stringify({ completed: completedEx, notes }));
+        }
+      }, [completedEx, notes, loaded]);
+
+      // Timer Effect
+      useEffect(() => {
+        if (timer.run && timer.left > 0) {
+          timerRef.current = setTimeout(() => setTimer(p => ({ ...p, left: p.left - 1 })), 1000);
+        } else if (timer.left === 0 && timer.active) {
+          setTimer(p => ({ ...p, run: false }));
+        }
+        return () => clearTimeout(timerRef.current);
+      }, [timer]);
+
+      const plan = PL[activePlanId];
+
+      const toggleDay = (d) => setExpandedDays(p => p.includes(d) ? p.filter(id => id !== d) : [...p, d]);
+      const toggleEx = (dId, eIdx) => {
+        const k = `${activePlanId}-${dId}-${eIdx}`;
+        setCompletedEx(p => ({ ...p, [k]: !p[k] }));
+      };
+      
+      const updateNote = (dId, text) => {
+        setNotes(p => ({ ...p, [`${activePlanId}-${dId}`]: text }));
+      };
+
+      const startTimer = (tStr, lbl, e) => {
+        e.stopPropagation();
+        const sec = parseTime(tStr);
+        if (sec > 0) setTimer({ active: true, left: sec, init: sec, label: lbl, run: true });
+      };
+
+      const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+
+      // Progress calculation
+      const getDayProgress = (dId, total) => {
+        let c = 0;
+        for (let i = 0; i < total; i++) if (completedEx[`${activePlanId}-${dId}-${i}`]) c++;
+        return Math.round((c / total) * 100) || 0;
+      };
+
+      const getWeeklyProgress = () => {
+        let t = 0, c = 0;
+        plan.days.forEach(d => {
+          t += d.ex.length;
+          d.ex.forEach((_, i) => { if (completedEx[`${activePlanId}-${d.n}-${i}`]) c++; });
+        });
+        return { percent: Math.round((c / t) * 100) || 0, completed: c, total: t };
+      };
+
+      const weekly = getWeeklyProgress();
+
+      // Get Type Style
+      const getTypeStyle = (t) => {
+        switch(t) {
+          case C: return { i: Icons.Dumbbell, c: 'text-amber-400', b: 'bg-amber-950/40 border-amber-500/20', l: 'Compound' };
+          case I: return { i: Icons.Activity, c: 'text-neutral-400', b: 'bg-toji-border/40 border-neutral-700', l: 'Isolation' };
+          case B: return { i: Icons.Bodyweight, c: 'text-blue-400', b: 'bg-blue-950/40 border-blue-500/20', l: 'Bodyweight' };
+          default: return { i: Icons.Activity, c: 'text-neutral-400', b: 'bg-toji-border border-neutral-700', l: 'Machine' };
+        }
+      };
+
+      // Filtering days based on search
+      const visibleDays = plan.days.map(d => {
+        if (!searchQuery) return { ...d, visibleEx: d.ex, isVisible: true };
+        const q = searchQuery.toLowerCase();
+        const visibleEx = d.ex.filter(e => e.n.toLowerCase().includes(q) || e.m.toLowerCase().includes(q));
+        return { ...d, visibleEx, isVisible: visibleEx.length > 0 || d.t.toLowerCase().includes(q) };
+      }).filter(d => d.isVisible);
+
+      if (!loaded) return null;
+
+      return (
+        <div className="min-h-screen p-4 md:p-8 pb-32 max-w-5xl mx-auto space-y-8 font-sans relative">
+          
+          {/* Header */}
+          <header className="text-center py-6 border-b border-toji-border space-y-3 relative">
+            <h1 className="text-3xl md:text-5xl font-black tracking-widest text-toji-gold uppercase drop-shadow-[0_0_15px_rgba(201,168,76,0.2)]">
+              Vicky × Toji
+            </h1>
+            <p className="text-xs md:text-sm text-toji-muted uppercase tracking-[0.2em] font-semibold">
+              Premium Workout Master · Lean Bulk
+            </p>
+          </header>
+
+          {/* Top Dashboard: Rules & Weekly Progress */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div className="md:col-span-2 glass border border-toji-gold/20 rounded-2xl p-5 shadow-[0_0_20px_rgba(201,168,76,0.05)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10 text-toji-gold pointer-events-none">
+                {Icons.Shield}
+              </div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-toji-gold">{Icons.Shield}</span>
+                <h2 className="text-sm font-bold text-toji-gold uppercase tracking-widest">Master Rules</h2>
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs md:text-sm text-neutral-400">
+                {["Lateral delts are #1 — 8-10 sets/week min.", "Upper chest FIRST in every push session.", "+350-450 kcal/day surplus mandatory.", "2-rep rule: leave only 1-2 reps in tank.", "Progressive overload on strict form only.", "APT fix: daily glute bridges & hip stretch.", "Protein: 1.6-2g/kg daily (Eggs/Soya/Dal).", "Deload every 6-8 weeks (60% weight)."].map((r, i) => (
+                  <li key={i} className="flex gap-2 items-start"><span className="text-toji-gold/60">→</span><span>{r}</span></li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="glass border border-toji-border rounded-2xl p-5 flex flex-col justify-center">
+              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Weekly Progress</h3>
+              <div className="flex items-end justify-between mb-2">
+                <span className="text-4xl font-black text-white">{weekly.percent}%</span>
+                <span className="text-sm text-neutral-500 font-medium mb-1">{weekly.completed} / {weekly.total} Ex</span>
+              </div>
+              <div className="h-2 w-full bg-neutral-900 rounded-full overflow-hidden">
+                <div className="h-full bg-toji-gold transition-all duration-1000 ease-out" style={{ width: `${weekly.percent}%` }}></div>
+              </div>
+              <p className="text-xs text-neutral-500 mt-4 italic">Progress auto-saves locally.</p>
+            </div>
+          </div>
+
+          {/* Controls: Tabs & Search */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-toji-panel p-2 rounded-xl border border-toji-border">
+            <div className="flex w-full md:w-auto overflow-x-auto hide-scrollbar gap-1">
+              {Object.entries({ s4: 'Split (4)', s5: 'Split (5)', b4: 'Body (4)', b5: 'Body (5)' }).map(([k, l]) => (
+                <button key={k} onClick={() => { setActivePlanId(k); setExpandedDays([PL[k].days[0].n]); setSearchQuery(''); }}
+                  className={`py-2 px-4 rounded-lg text-xs md:text-sm font-bold tracking-wide whitespace-nowrap transition-all duration-300
+                    ${activePlanId === k ? 'bg-toji-gold/15 text-toji-gold shadow-[0_0_15px_rgba(201,168,76,0.15)] border border-toji-gold/30' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5 border border-transparent'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            
+            <div className="relative w-full md:w-64">
+              <div className="absolute inset-y-0 left-3 flex items-center text-neutral-500 pointer-events-none">{Icons.Search}</div>
+              <input type="search" placeholder="Search exercises..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-neutral-950 border border-toji-border rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-toji-gold/50 transition-colors hide-search" />
+            </div>
+          </div>
+
+          {/* Schedule Summary */}
+          <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+            {plan.sc.map((d, i) => (
+              <div key={i} className={`p-2 rounded-xl border flex flex-col items-center text-center transition-colors ${d.g ? 'bg-toji-gold/5 border-toji-gold/20' : 'bg-toji-panel border-toji-border opacity-50'}`}>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase">{d.d}</span>
+                <span className={`text-xs md:text-sm font-bold mt-1 ${d.g ? 'text-toji-gold' : 'text-neutral-400'}`}>{d.t}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Days Accordion */}
+          <div className="space-y-4">
+            {visibleDays.map((d) => {
+              const exp = expandedDays.includes(d.n) || searchQuery.length > 0;
+              const prog = getDayProgress(d.n, d.ex.length);
+              
+              return (
+                <div key={d.n} className={`glass border rounded-2xl overflow-hidden transition-all duration-300 ${exp ? 'border-toji-gold/30 shadow-[0_4px_30px_rgba(0,0,0,0.5)]' : 'border-toji-border hover:border-neutral-700'}`}>
+                  
+                  {/* Header */}
+                  <div onClick={() => toggleDay(d.n)} className="p-4 md:p-5 flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-4 flex-1">
+                      <span className="bg-toji-gold/10 text-toji-gold border border-toji-gold/20 px-3 py-1 rounded-full text-xs font-bold shrink-0">{d.n}</span>
+                      <div>
+                        <h3 className="text-base md:text-lg font-bold text-white group-hover:text-toji-gold transition-colors">{d.t}</h3>
+                        <p className="text-xs text-neutral-500 font-medium">{d.s}</p>
+                      </div>
+                      
+                      <div className="hidden md:flex items-center gap-3 flex-1 max-w-[150px] ml-auto mr-4">
+                        <div className="h-1.5 flex-1 bg-neutral-900 rounded-full"><div className="h-full bg-toji-gold transition-all" style={{width: `${prog}%`}}></div></div>
+                        <span className="text-[10px] font-bold text-neutral-500">{prog}%</span>
+                      </div>
+                    </div>
+                    <div className="text-neutral-500 group-hover:text-toji-gold transition-colors">{exp ? Icons.ChevronUp : Icons.ChevronDown}</div>
+                  </div>
+
+                  {!exp && <div className="h-0.5 w-full bg-neutral-900 md:hidden"><div className="h-full bg-toji-gold" style={{width: `${prog}%`}}></div></div>}
+
+                  {/* Body */}
+                  {exp && (
+                    <div className="p-4 md:p-5 pt-0 border-t border-white/5">
+                      
+                      {/* Warmup */}
+                      <div className="bg-neutral-950/50 rounded-xl p-4 mb-6 border-l-2 border-orange-500 flex gap-3 items-start mt-4">
+                        <span className="text-orange-500 mt-0.5">{Icons.Flame}</span>
+                        <div><span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest block mb-1">Warm-Up</span><p className="text-sm text-neutral-300">{d.wu}</p></div>
+                      </div>
+
+                      {/* Exercises */}
+                      <div className="space-y-3">
+                        {d.visibleEx.map((ex, eIdx) => {
+                          // Find original index to maintain proper completion state during search
+                          const origIdx = d.ex.findIndex(e => e.n === ex.n);
+                          const isComp = completedEx[`${activePlanId}-${d.n}-${origIdx}`];
+                          const tStyle = getTypeStyle(ex.t);
+                          const hasTimer = parseTime(ex.r) > 0;
+                          
+                          return (
+                            <div key={origIdx} onClick={() => toggleEx(d.n, origIdx)} 
+                              className={`group relative p-4 md:p-5 rounded-xl border transition-all duration-300 cursor-pointer overflow-hidden
+                              ${isComp ? 'bg-black/40 border-neutral-800/50 opacity-60' : 'bg-neutral-950 border-toji-border hover:border-toji-gold/40 hover:bg-[#0a0a0a]'}`}>
+                              
+                              <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-center">
+                                
+                                {/* Check & Titles */}
+                                <div className="flex items-start gap-4 flex-1">
+                                  <button className={`mt-0.5 transition-colors ${isComp ? 'text-toji-gold drop-shadow-[0_0_8px_rgba(201,168,76,0.6)]' : 'text-neutral-700 group-hover:text-toji-gold/50'}`}>
+                                    {isComp ? Icons.CheckCircle : Icons.Circle}
+                                  </button>
+                                  <div className="flex-1">
+                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                      <h4 className={`font-bold text-base md:text-lg ${isComp ? 'line-through text-neutral-600' : 'text-white'}`}>{ex.n}</h4>
+                                      {ex.p === 1 && (
+                                        <span className="inline-flex items-center gap-1 bg-toji-gold/10 text-toji-gold border border-toji-gold/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest animate-glow">
+                                          {Icons.Star} Priority
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs md:text-sm text-toji-muted font-medium">{ex.m}</p>
+                                    <p className="text-xs text-neutral-400 mt-3 md:hidden italic border-l-2 border-neutral-800 pl-2">{ex.note}</p>
+                                  </div>
+                                </div>
+
+                                {/* Metrics & Type */}
+                                <div className={`flex flex-wrap items-center gap-3 md:gap-6 pl-9 md:pl-0 ${isComp ? 'opacity-50' : ''}`}>
+                                  <div className={`hidden md:flex items-center gap-1.5 px-3 py-1 rounded-lg border ${tStyle.b} ${tStyle.c}`}>
+                                    {tStyle.i} <span className="text-[10px] font-bold uppercase tracking-wider">{tStyle.l}</span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between w-full md:w-auto gap-4 md:gap-6 bg-toji-panel md:bg-transparent p-3 md:p-0 rounded-xl border border-toji-border md:border-none">
+                                    <div className="text-center min-w-[32px]"><span className="block text-[9px] text-neutral-500 uppercase font-bold mb-1">Sets</span><span className="text-sm font-bold text-white">{ex.s}</span></div>
+                                    <div className="w-px h-8 bg-neutral-800"></div>
+                                    
+                                    <div className="text-center min-w-[48px] flex items-center justify-center gap-1">
+                                      <div><span className="block text-[9px] text-neutral-500 uppercase font-bold mb-1">Reps</span><span className="text-sm font-bold text-toji-gold">{ex.r}</span></div>
+                                      {hasTimer && !isComp && (
+                                        <button onClick={(e) => startTimer(ex.r, `${ex.n} (Hold)`, e)} className="p-1.5 bg-neutral-800 hover:bg-toji-gold/20 text-neutral-400 hover:text-toji-gold rounded transition-colors" title="Start Rep Timer">{Icons.Play}</button>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="w-px h-8 bg-neutral-800"></div>
+                                    <div className="text-center min-w-[48px] flex items-center justify-center gap-1">
+                                      <div><span className="block text-[9px] text-neutral-500 uppercase font-bold mb-1">Rest</span><span className="text-sm font-medium text-neutral-300">{ex.rest}</span></div>
+                                      {!isComp && (
+                                        <button onClick={(e) => startTimer(ex.rest, `Rest: ${ex.n}`, e)} className="p-1.5 bg-neutral-800 hover:bg-toji-gold/20 text-neutral-400 hover:text-toji-gold rounded transition-colors" title="Start Rest Timer">{Icons.Timer}</button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="hidden md:flex items-start gap-2 mt-3 pl-9">
+                                <span className="text-neutral-600 mt-0.5">{Icons.Edit}</span>
+                                <p className={`text-xs md:text-sm font-medium ${isComp ? 'text-neutral-600' : 'text-neutral-400'}`}>{ex.note}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {d.visibleEx.length === 0 && <div className="text-center py-4 text-neutral-500 text-sm">No exercises match your search.</div>}
+                      </div>
+
+                      {/* Cool Down */}
+                      <div className="bg-neutral-950/50 rounded-xl p-4 mt-6 border-l-2 border-blue-500 flex gap-3 items-start">
+                        <span className="text-blue-500 mt-0.5">{Icons.Snowflake}</span>
+                        <div><span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest block mb-1">Cool-Down</span><p className="text-sm text-neutral-300">{d.cd}</p></div>
+                      </div>
+
+                      {/* Notes Section */}
+                      <div className="mt-4 pt-4 border-t border-white/5 relative">
+                        <div className="absolute top-6 left-3 text-neutral-600">{Icons.Edit}</div>
+                        <textarea 
+                          placeholder={`Add personal notes for ${d.n}... (Saves automatically)`}
+                          value={notes[`${activePlanId}-${d.n}`] || ''}
+                          onChange={(e) => updateNote(d.n, e.target.value)}
+                          className="w-full bg-neutral-950/50 border border-toji-border rounded-xl py-3 pl-10 pr-4 text-sm text-neutral-300 placeholder-neutral-700 focus:outline-none focus:border-toji-gold/50 transition-colors resize-y min-h-[80px]"
+                        />
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Floating Smart Timer */}
+          {timer.active && (
+            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden backdrop-blur-xl border transition-all duration-300 ${timer.left === 0 ? 'bg-toji-gold border-white text-black animate-pulse' : 'bg-black/80 border-toji-gold/40'}`}>
+              <div className="p-4 md:p-5 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className={`text-[10px] uppercase font-bold tracking-widest ${timer.left === 0 ? 'text-black/60' : 'text-toji-gold'}`}>{timer.label}</span>
+                  <span className={`text-4xl font-mono font-black tracking-tighter ${timer.left === 0 ? 'text-black' : 'text-white'}`}>{formatTime(timer.left)}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {timer.left > 0 ? (
+                    <>
+                      <button onClick={() => setTimer(p => ({...p, run: !p.run}))} className="p-3.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-toji-gold transition-colors shadow-inner">
+                        {timer.run ? Icons.Pause : Icons.Play}
+                      </button>
+                      <button onClick={() => setTimer(p => ({...p, left: p.init, run: false}))} className="p-2.5 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors">
+                        {Icons.Reset}
+                      </button>
+                    </>
+                  ) : <span className="px-4 py-1.5 bg-black/20 rounded-full text-sm font-bold mr-2 uppercase tracking-wide">Done!</span>}
+                  
+                  <button onClick={() => setTimer({active:false,left:0,init:0,label:'',run:false})} className={`p-2.5 rounded-full transition-colors ${timer.left === 0 ? 'hover:bg-black/20 text-black' : 'hover:bg-red-900/40 text-neutral-500 hover:text-red-400'}`}>
+                    {Icons.X}
+                  </button>
+                </div>
+              </div>
+              
+              {timer.left > 0 && (
+                <div className="h-1.5 bg-neutral-900 w-full"><div className="h-full bg-toji-gold transition-all ease-linear" style={{ width: `${(timer.left / timer.init) * 100}%` }}/></div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
